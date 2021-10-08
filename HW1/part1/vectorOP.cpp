@@ -49,49 +49,50 @@ void clampedExpVector(float *values, int *exponents, float *output, int N)
   // Your solution should work for any value of
   // N and VECTOR_WIDTH, not just when VECTOR_WIDTH divides N
   //
-  float one = 1.0;
-  float nine = 9.999999f;
   __pp_vec_float vec1, result;
   __pp_vec_int vec2, count;
-  __pp_mask maskAll, expZeroMask, valZeroMask, overMask, countMask;
+  __pp_mask maskAll, expZeroMask, valMask, overMask, countMask;
 
   __pp_vec_int allZeros = _pp_vset_int(0);
   __pp_vec_int allOnes = _pp_vset_int(1);
-  __pp_vec_float oneFloat = _pp_vset_float(1.f);
   __pp_vec_float UBMask = _pp_vset_float(9.999999f);
+  __pp_vec_float oneFloat = _pp_vset_float(1.f);
 
   for (int i = 0; i < N; i += VECTOR_WIDTH)
   {
-    maskAll = ((i + VECTOR_WIDTH) > N) ? _pp_init_ones(N - i) : _pp_init_ones();
-    expZeroMask = _pp_init_ones(0);
+    maskAll = _pp_init_ones(N - i);
 
+    // load data
     _pp_vload_float(vec1, values + i, maskAll);  // x = values[i];
     _pp_vload_int(vec2, exponents + i, maskAll); // y = exponents[i];
 
+    // find exponent = 0 in the vector
     _pp_veq_int(expZeroMask, vec2, allZeros, maskAll); // if (y == 0)
-    _pp_vset_float(result, 1.f, expZeroMask);          // output[i] = 1.f;
+    // _pp_vset_float(result, 1.0, expZeroMask);          // output[i] = 1.f;
+    _pp_vstore_float(output + i, oneFloat, expZeroMask);
 
-    valZeroMask = _pp_mask_not(expZeroMask);
-    valZeroMask = _pp_mask_and(maskAll, valZeroMask);
-    _pp_vmove_float(result, vec1, valZeroMask); // float result = x;
+    // else (exponent != 0)
+    valMask = _pp_mask_not(expZeroMask);
+    valMask = _pp_mask_and(maskAll, valMask);
+    _pp_vmove_float(result, vec1, valMask); // float result = x;
 
-    _pp_vsub_int(count, vec2, allOnes, valZeroMask); // int count = y - 1;
-    _pp_vgt_int(countMask, count, allZeros, valZeroMask);
-    // count = _pp_cntbits(countMask);
+    // update valMask
+    _pp_vsub_int(count, vec2, allOnes, valMask); // int count = y - 1;
+    _pp_vgt_int(countMask, count, allZeros, valMask);
 
-    while (_pp_cntbits(countMask))
+    // compute count
+    while (_pp_cntbits(countMask) > 0)
     {
-      // printf("ck");
       _pp_vmult_float(result, result, vec1, countMask); // result *= x;
-      _pp_vsub_int(count, count, allOnes, valZeroMask); // count--;
-      _pp_vgt_int(countMask, count, allZeros, valZeroMask);
-      // count = _pp_cntbits(countMask);
+      _pp_vsub_int(count, count, allOnes, valMask);     // count--;
+      _pp_vgt_int(countMask, count, allZeros, valMask);
     }
-    printf("ck");
-    _pp_vgt_float(overMask, result, UBMask, valZeroMask); // if (result > 9.999999f)
-    _pp_vset_float(result, nine, overMask);               // result = 9.999999f;
 
-    _pp_vstore_float(output + i, result, maskAll); // output[i] = result;
+    // if (result > 9.999999f)
+    _pp_vgt_float(overMask, result, UBMask, valMask);
+    _pp_vset_float(result, 9.999999f, overMask); // result = 9.999999f;
+
+    _pp_vstore_float(output + i, result, valMask); // output[i] = result;
   }
 }
 
@@ -107,7 +108,7 @@ float arraySumVector(float *values, int N)
   __pp_vec_float vec;
   __pp_mask maskAll;
   maskAll = _pp_init_ones();
-  float sum = 0;
+  float sum = 0.f;
   float *output = new float[VECTOR_WIDTH];
   int size = VECTOR_WIDTH;
 
