@@ -88,18 +88,18 @@ LBB0_6:                                 ##   Parent Loop BB0_1 Depth=1
 	.p2align	4, 0x90
 LBB0_2:                                 ##   Parent Loop BB0_1 Depth=1
                                         ## =>  This Inner Loop Header: Depth=2
-	vmovups	(%rbx,%rdx,4), %ymm0
-	vmovups	32(%rbx,%rdx,4), %ymm1
-	vmovups	64(%rbx,%rdx,4), %ymm2
-	vmovups	96(%rbx,%rdx,4), %ymm3
+	vmovaps	(%rbx,%rdx,4), %ymm0
+	vmovaps	32(%rbx,%rdx,4), %ymm1
+	vmovaps	64(%rbx,%rdx,4), %ymm2
+	vmovaps	96(%rbx,%rdx,4), %ymm3
 	vaddps	(%r15,%rdx,4), %ymm0, %ymm0
 	vaddps	32(%r15,%rdx,4), %ymm1, %ymm1
 	vaddps	64(%r15,%rdx,4), %ymm2, %ymm2
 	vaddps	96(%r15,%rdx,4), %ymm3, %ymm3
-	vmovups	%ymm0, (%r14,%rdx,4)
-	vmovups	%ymm1, 32(%r14,%rdx,4)
-	vmovups	%ymm2, 64(%r14,%rdx,4)
-	vmovups	%ymm3, 96(%r14,%rdx,4)
+	vmovaps	%ymm0, (%r14,%rdx,4)
+	vmovaps	%ymm1, 32(%r14,%rdx,4)
+	vmovaps	%ymm2, 64(%r14,%rdx,4)
+	vmovaps	%ymm3, 96(%r14,%rdx,4)
 	addq	$32, %rdx
 	cmpq	$1024, %rdx                     ## imm = 0x400
 	jne	LBB0_2
