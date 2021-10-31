@@ -40,8 +40,12 @@ void *count_pi(void *args)
 
 int main(int argc, char *argv[])
 {
-    n_threads = atoi(argv[1]);
-    n_tosses = atoll(argv[2]);
+    if (argc > 1)
+    {
+        n_threads = atoi(argv[1]);
+        n_tosses = atoll(argv[2]);
+    }
+
     printf("n_threads=%d, n_tosses=%lld\n", n_threads, n_tosses);
     pthread_t callThd[n_threads]; // 宣告建立 pthread
 
