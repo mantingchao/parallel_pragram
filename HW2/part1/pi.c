@@ -13,7 +13,7 @@ void *count_pi(void *args)
     long cur_thread = (long)args;
     float x = 0.0f, y = 0.0f;
     long long int in_circle = 0;
-    unsigned int seed = time(NULL);
+    unsigned int seed = time(NULL) + cur_thread;
 
     // 將原本的 PI 算法切成好幾份
     for (long long int i = n_tosses / n_threads; i >= 0; i--)
