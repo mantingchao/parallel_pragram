@@ -2,6 +2,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// static long num_steps = 1e9;
+
+// int main()
+// {
+
+//     double x, pi, sum = 0.0;
+//     double step = 1.0 / num_steps;
+//     for (int i = 0; i < num_steps; i++)
+//     {
+//         x = (i + 0.5) * step;
+//         sum = sum + 4.0 / (1.0 + x * x);
+//     }
+//     pi = step * sum;
+//     printf("%.10lf\n", pi);
+//     printf("runtime: %f  sec \n", (double)clock() / CLOCKS_PER_SEC);
+// }
+
 int n_threads = 4;
 long long int n_tosses = 1e8;
 long long int total_in_circle;
@@ -18,8 +35,8 @@ void *count_pi(void *args)
     // 將原本的 PI 算法切成好幾份
     for (long long int i = n_tosses / n_threads; i >= 0; i--)
     {
-        x = rand_r(&seed) / ((float)RAND_MAX); //thread-safe random number generator
-        y = rand_r(&seed) / ((float)RAND_MAX); //thread-safe random number generator
+        x = rand_r(&seed) / ((float)RAND_MAX);
+        y = rand_r(&seed) / ((float)RAND_MAX);
         if (x * x + y * y <= 1.0f)
         {
             in_circle++;
@@ -27,13 +44,12 @@ void *count_pi(void *args)
     }
 
     // **** critical section ****
-    // 一次只允許一個 thread 存取
     pthread_mutex_lock(&mutexsum);
     total_in_circle += in_circle;
     pthread_mutex_unlock(&mutexsum);
     // *****************
 
-    printf("Thread %ld:  local=%lld global=%.lld\n", cur_thread, in_circle, total_in_circle);
+    // printf("Thread %ld:  local=%lld global=%.lld\n", cur_thread, in_circle, total_in_circle);
 
     pthread_exit((void *)0);
 }
@@ -46,7 +62,7 @@ int main(int argc, char *argv[])
         n_tosses = atoll(argv[2]);
     }
 
-    printf("n_threads=%d, n_tosses=%lld\n", n_threads, n_tosses);
+    // printf("n_threads=%d, n_tosses=%lld\n", n_threads, n_tosses);
     pthread_t callThd[n_threads]; // 宣告建立 pthread
 
     clock_t starttime, endtime;
@@ -77,10 +93,10 @@ int main(int argc, char *argv[])
     endtime = clock();
     float pi_estimated = 4 * total_in_circle / ((float)n_tosses);
     // 所有 thread 執行完畢，印出 PI
-    printf("Pi =  %.10lf \n", pi_estimated);
+    printf("%.10lf \n", pi_estimated);
 
     double diff = endtime - starttime; // ms
-    printf("runtime: %f  sec \n", diff / CLOCKS_PER_SEC);
+    // printf("runtime: %f  sec \n", diff / CLOCKS_PER_SEC);
 
     // 回收互斥鎖
     pthread_mutex_destroy(&mutexsum);

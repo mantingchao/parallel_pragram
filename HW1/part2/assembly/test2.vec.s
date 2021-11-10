@@ -38,20 +38,20 @@ __Z5test2PfS_S_i:                       ## @_Z5test2PfS_S_i
 	.cfi_offset %r13, -40
 	.cfi_offset %r14, -32
 	.cfi_offset %r15, -24
-	movq	%rdx, %r14
-	movq	%rsi, %r15
+	movq	%rdx, %r15
+	movq	%rsi, %r14
 	movq	%rdi, %rbx
 	leaq	4096(%rdx), %rax
-	leaq	4096(%rsi), %rcx
+	leaq	4096(%rdi), %rcx
 	cmpq	%rdx, %rcx
 	seta	%cl
-	leaq	4096(%rdi), %rsi
-	cmpq	%r15, %rax
+	addq	$4096, %rsi                     ## imm = 0x1000
+	cmpq	%rdi, %rax
 	seta	%dl
 	andb	%cl, %dl
-	cmpq	%r14, %rsi
+	cmpq	%r15, %rsi
 	seta	%cl
-	cmpq	%rdi, %rax
+	cmpq	%r14, %rax
 	seta	%r13b
 	andb	%cl, %r13b
 	orb	%dl, %r13b
@@ -61,7 +61,7 @@ __Z5test2PfS_S_i:                       ## @_Z5test2PfS_S_i
 LBB0_1:                                 ## =>This Loop Header: Depth=1
                                         ##     Child Loop BB0_2 Depth 2
                                         ##       Child Loop BB0_3 Depth 3
-                                        ##       Child Loop BB0_8 Depth 3
+                                        ##       Child Loop BB0_16 Depth 3
 	movq	%rax, -64(%rbp)                 ## 8-byte Spill
 	movsd	%xmm1, -48(%rbp)                ## 8-byte Spill
 	callq	_mach_absolute_time
@@ -69,60 +69,99 @@ LBB0_1:                                 ## =>This Loop Header: Depth=1
 	xorl	%eax, %eax
 	jmp	LBB0_2
 	.p2align	4, 0x90
-LBB0_4:                                 ##   in Loop: Header=BB0_2 Depth=2
+LBB0_12:                                ##   in Loop: Header=BB0_2 Depth=2
 	addl	$1, %eax
 	cmpl	$20000000, %eax                 ## imm = 0x1312D00
-	je	LBB0_5
+	je	LBB0_13
 LBB0_2:                                 ##   Parent Loop BB0_1 Depth=1
                                         ## =>  This Loop Header: Depth=2
                                         ##       Child Loop BB0_3 Depth 3
-                                        ##       Child Loop BB0_8 Depth 3
+                                        ##       Child Loop BB0_16 Depth 3
 	xorl	%ecx, %ecx
 	testb	%r13b, %r13b
-	je	LBB0_3
+	jne	LBB0_16
+	jmp	LBB0_3
 	.p2align	4, 0x90
-LBB0_8:                                 ##   Parent Loop BB0_1 Depth=1
-                                        ##     Parent Loop BB0_2 Depth=2
-                                        ## =>    This Inner Loop Header: Depth=3
-	movss	(%r15,%rcx,4), %xmm0            ## xmm0 = mem[0],zero,zero,zero
-	maxss	(%rbx,%rcx,4), %xmm0
-	movss	%xmm0, (%r14,%rcx,4)
-	movss	4(%r15,%rcx,4), %xmm0           ## xmm0 = mem[0],zero,zero,zero
-	maxss	4(%rbx,%rcx,4), %xmm0
-	movss	%xmm0, 4(%r14,%rcx,4)
+LBB0_20:                                ##   in Loop: Header=BB0_16 Depth=3
 	addq	$2, %rcx
 	cmpq	$1024, %rcx                     ## imm = 0x400
-	jne	LBB0_8
-	jmp	LBB0_4
+	je	LBB0_12
+LBB0_16:                                ##   Parent Loop BB0_1 Depth=1
+                                        ##     Parent Loop BB0_2 Depth=2
+                                        ## =>    This Inner Loop Header: Depth=3
+	movss	(%rbx,%rcx,4), %xmm0            ## xmm0 = mem[0],zero,zero,zero
+	movss	%xmm0, (%r15,%rcx,4)
+	movss	(%r14,%rcx,4), %xmm0            ## xmm0 = mem[0],zero,zero,zero
+	ucomiss	(%rbx,%rcx,4), %xmm0
+	jbe	LBB0_18
+## %bb.17:                              ##   in Loop: Header=BB0_16 Depth=3
+	movss	%xmm0, (%r15,%rcx,4)
+LBB0_18:                                ##   in Loop: Header=BB0_16 Depth=3
+	movss	4(%rbx,%rcx,4), %xmm0           ## xmm0 = mem[0],zero,zero,zero
+	movss	%xmm0, 4(%r15,%rcx,4)
+	movss	4(%r14,%rcx,4), %xmm0           ## xmm0 = mem[0],zero,zero,zero
+	ucomiss	4(%rbx,%rcx,4), %xmm0
+	jbe	LBB0_20
+## %bb.19:                              ##   in Loop: Header=BB0_16 Depth=3
+	movss	%xmm0, 4(%r15,%rcx,4)
+	jmp	LBB0_20
 	.p2align	4, 0x90
+LBB0_11:                                ##   in Loop: Header=BB0_3 Depth=3
+	addq	$4, %rcx
+	cmpq	$1024, %rcx                     ## imm = 0x400
+	je	LBB0_12
 LBB0_3:                                 ##   Parent Loop BB0_1 Depth=1
                                         ##     Parent Loop BB0_2 Depth=2
                                         ## =>    This Inner Loop Header: Depth=3
-	movaps	(%r15,%rcx,4), %xmm0
-	movaps	16(%r15,%rcx,4), %xmm1
-	maxps	(%rbx,%rcx,4), %xmm0
-	maxps	16(%rbx,%rcx,4), %xmm1
-	movaps	%xmm0, (%r14,%rcx,4)
-	movaps	%xmm1, 16(%r14,%rcx,4)
-	movaps	32(%r15,%rcx,4), %xmm0
-	movaps	48(%r15,%rcx,4), %xmm1
-	maxps	32(%rbx,%rcx,4), %xmm0
-	maxps	48(%rbx,%rcx,4), %xmm1
-	movaps	%xmm0, 32(%r14,%rcx,4)
-	movaps	%xmm1, 48(%r14,%rcx,4)
-	addq	$16, %rcx
-	cmpq	$1024, %rcx                     ## imm = 0x400
-	jne	LBB0_3
-	jmp	LBB0_4
+	movaps	(%rbx,%rcx,4), %xmm0
+	movups	%xmm0, (%r15,%rcx,4)
+	movaps	(%r14,%rcx,4), %xmm0
+	movaps	(%rbx,%rcx,4), %xmm1
+	ucomiss	%xmm1, %xmm0
+	ja	LBB0_4
+## %bb.5:                               ##   in Loop: Header=BB0_3 Depth=3
+	cmpltps	%xmm0, %xmm1
+	pextrb	$4, %xmm1, %edx
+	testb	$1, %dl
+	jne	LBB0_6
+LBB0_7:                                 ##   in Loop: Header=BB0_3 Depth=3
+	pextrb	$8, %xmm1, %edx
+	testb	$1, %dl
+	jne	LBB0_8
+LBB0_9:                                 ##   in Loop: Header=BB0_3 Depth=3
+	pextrb	$12, %xmm1, %edx
+	testb	$1, %dl
+	je	LBB0_11
+	jmp	LBB0_10
 	.p2align	4, 0x90
-LBB0_5:                                 ##   in Loop: Header=BB0_1 Depth=1
+LBB0_4:                                 ##   in Loop: Header=BB0_3 Depth=3
+	movss	%xmm0, (%r15,%rcx,4)
+	cmpltps	%xmm0, %xmm1
+	pextrb	$4, %xmm1, %edx
+	testb	$1, %dl
+	je	LBB0_7
+LBB0_6:                                 ##   in Loop: Header=BB0_3 Depth=3
+	extractps	$1, %xmm0, 4(%r15,%rcx,4)
+	pextrb	$8, %xmm1, %edx
+	testb	$1, %dl
+	je	LBB0_9
+LBB0_8:                                 ##   in Loop: Header=BB0_3 Depth=3
+	extractps	$2, %xmm0, 8(%r15,%rcx,4)
+	pextrb	$12, %xmm1, %edx
+	testb	$1, %dl
+	je	LBB0_11
+LBB0_10:                                ##   in Loop: Header=BB0_3 Depth=3
+	extractps	$3, %xmm0, 12(%r15,%rcx,4)
+	jmp	LBB0_11
+	.p2align	4, 0x90
+LBB0_13:                                ##   in Loop: Header=BB0_1 Depth=1
 	callq	_mach_absolute_time
 	movq	%rax, %r12
 	leaq	__ZZL5tdiffyyE8timebase(%rip), %rdi
 	callq	_mach_timebase_info
 	testl	%eax, %eax
-	jne	LBB0_9
-## %bb.6:                               ##   in Loop: Header=BB0_1 Depth=1
+	jne	LBB0_21
+## %bb.14:                              ##   in Loop: Header=BB0_1 Depth=1
 	subq	-56(%rbp), %r12                 ## 8-byte Folded Reload
 	movq	%r12, %xmm0
 	punpckldq	LCPI0_0(%rip), %xmm0    ## xmm0 = xmm0[0],mem[0],xmm0[1],mem[1]
@@ -146,7 +185,7 @@ LBB0_5:                                 ##   in Loop: Header=BB0_1 Depth=1
 	addl	$1, %eax
 	cmpl	$50, %eax
 	jne	LBB0_1
-## %bb.7:
+## %bb.15:
 	divsd	LCPI0_3(%rip), %xmm1
 	movsd	%xmm1, -48(%rbp)                ## 8-byte Spill
 	movq	__ZNSt3__14coutE@GOTPCREL(%rip), %rdi
@@ -182,7 +221,7 @@ LBB0_5:                                 ##   in Loop: Header=BB0_1 Depth=1
 	popq	%r15
 	popq	%rbp
 	jmp	__ZNSt3__124__put_character_sequenceIcNS_11char_traitsIcEEEERNS_13basic_ostreamIT_T0_EES7_PKS4_m ## TAILCALL
-LBB0_9:
+LBB0_21:
 	callq	__Z5test2PfS_S_i.cold.1
 	.cfi_endproc
                                         ## -- End function
