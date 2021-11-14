@@ -1,4 +1,5 @@
 #include "cg_impl.h"
+#include <omp.h>
 //---------------------------------------------------------------------
 // Floaging point arrays here are named as in spec discussion of
 // CG algorithm
@@ -22,6 +23,7 @@ void conj_grad(int colidx[],
     //---------------------------------------------------------------------
     // Initialize the CG algorithm:
     //---------------------------------------------------------------------
+#pragma omp parallel for
     for (j = 0; j < naa + 1; j++)
     {
         q[j] = 0.0;
@@ -30,10 +32,12 @@ void conj_grad(int colidx[],
         p[j] = r[j];
     }
 
-    //---------------------------------------------------------------------
-    // rho = r.r
-    // Now, obtain the norm of r: First, sum squares of r elements locally...
-    //---------------------------------------------------------------------
+//---------------------------------------------------------------------
+// rho = r.r
+// Now, obtain the norm of r: First, sum squares of r elements locally...
+//---------------------------------------------------------------------
+#pragma omp parallel for reduction(+ \
+                                   : rho)
     for (j = 0; j < lastcol - firstcol + 1; j++)
     {
         rho = rho + r[j] * r[j];
@@ -57,6 +61,8 @@ void conj_grad(int colidx[],
         //       unrolled-by-two version is some 10% faster.
         //       The unrolled-by-8 version below is significantly faster
         //       on the Cray t3d - overall speed of code is 1.5 times faster.
+#pragma omp parallel for reduction(+ \
+                                   : sum)
         for (j = 0; j < lastrow - firstrow + 1; j++)
         {
             sum = 0.0;
@@ -71,6 +77,8 @@ void conj_grad(int colidx[],
         // Obtain p.q
         //---------------------------------------------------------------------
         d = 0.0;
+#pragma omp parallel for reduction(+ \
+                                   : d)
         for (j = 0; j < lastcol - firstcol + 1; j++)
         {
             d = d + p[j] * q[j];
@@ -91,16 +99,19 @@ void conj_grad(int colidx[],
         // and    r = r - alpha*q
         //---------------------------------------------------------------------
         rho = 0.0;
+#pragma omp parallel for
         for (j = 0; j < lastcol - firstcol + 1; j++)
         {
             z[j] = z[j] + alpha * p[j];
             r[j] = r[j] - alpha * q[j];
         }
 
-        //---------------------------------------------------------------------
-        // rho = r.r
-        // Now, obtain the norm of r: First, sum squares of r elements locally...
-        //---------------------------------------------------------------------
+//---------------------------------------------------------------------
+// rho = r.r
+// Now, obtain the norm of r: First, sum squares of r elements locally...
+//---------------------------------------------------------------------
+#pragma omp parallel for reduction(+ \
+                                   : rho)
         for (j = 0; j < lastcol - firstcol + 1; j++)
         {
             rho = rho + r[j] * r[j];
@@ -111,9 +122,10 @@ void conj_grad(int colidx[],
         //---------------------------------------------------------------------
         beta = rho / rho0;
 
-        //---------------------------------------------------------------------
-        // p = r + beta*p
-        //---------------------------------------------------------------------
+//---------------------------------------------------------------------
+// p = r + beta*p
+//---------------------------------------------------------------------
+#pragma omp parallel for
         for (j = 0; j < lastcol - firstcol + 1; j++)
         {
             p[j] = r[j] + beta * p[j];
@@ -126,6 +138,9 @@ void conj_grad(int colidx[],
     // The partition submatrix-vector multiply
     //---------------------------------------------------------------------
     sum = 0.0;
+// #pragma omp parallel for reduction(+ \
+//                                    : d)
+#pragma omp parallel for
     for (j = 0; j < lastrow - firstrow + 1; j++)
     {
         d = 0.0;
@@ -136,9 +151,11 @@ void conj_grad(int colidx[],
         r[j] = d;
     }
 
-    //---------------------------------------------------------------------
-    // At this point, r contains A.z
-    //---------------------------------------------------------------------
+//---------------------------------------------------------------------
+// At this point, r contains A.z
+//---------------------------------------------------------------------
+#pragma omp parallel for reduction(+ \
+                                   : sum)
     for (j = 0; j < lastcol - firstcol + 1; j++)
     {
         d = x[j] - r[j];
@@ -214,6 +231,7 @@ void makea(int n,
         vecset(n, vc, ivc, &nzv, iouter + 1, 0.5);
         arow[iouter] = nzv;
 
+#pragma omp parallel for
         for (ivelt = 0; ivelt < nzv; ivelt++)
         {
             acol[iouter][ivelt] = ivc[ivelt] - 1;
@@ -264,9 +282,10 @@ void sparse(double a[],
     //---------------------------------------------------------------------
     nrows = lastrow - firstrow + 1;
 
-    //---------------------------------------------------------------------
-    // ...count the number of triples in each row
-    //---------------------------------------------------------------------
+//---------------------------------------------------------------------
+// ...count the number of triples in each row
+//---------------------------------------------------------------------
+#pragma omp parallel for
     for (j = 0; j < nrows + 1; j++)
     {
         rowstr[j] = 0;
@@ -304,6 +323,7 @@ void sparse(double a[],
     //---------------------------------------------------------------------
     for (j = 0; j < nrows; j++)
     {
+#pragma omp parallel for
         for (k = rowstr[j]; k < rowstr[j + 1]; k++)
         {
             a[k] = 0.0;
@@ -414,6 +434,8 @@ void sparse(double a[],
             nza = nza + 1;
         }
     }
+// #pragma omp parallel for private(j)
+#pragma omp parallel for
     for (j = 1; j < nrows + 1; j++)
     {
         rowstr[j] = rowstr[j] - nzloc[j - 1];
@@ -487,6 +509,7 @@ void vecset(int n, double v[], int iv[], int *nzv, int i, double val)
     logical set;
 
     set = false;
+#pragma omp parallel for
     for (k = 0; k < *nzv; k++)
     {
         if (iv[k] == i)
@@ -542,19 +565,22 @@ void init(double *zeta)
     //---------------------------------------------------------------------
     for (j = 0; j < lastrow - firstrow + 1; j++)
     {
+#pragma omp parallel for
         for (k = rowstr[j]; k < rowstr[j + 1]; k++)
         {
             colidx[k] = colidx[k] - firstcol;
         }
     }
 
-    //---------------------------------------------------------------------
-    // set starting vector to (1, 1, .... 1)
-    //---------------------------------------------------------------------
+//---------------------------------------------------------------------
+// set starting vector to (1, 1, .... 1)
+//---------------------------------------------------------------------
+#pragma omp parallel for
     for (i = 0; i < NA + 1; i++)
     {
         x[i] = 1.0;
     }
+#pragma omp parallel for
     for (j = 0; j < lastcol - firstcol + 1; j++)
     {
         q[j] = 0.0;
@@ -580,6 +606,8 @@ void iterate(double *zeta, int *it)
     //---------------------------------------------------------------------
     norm_temp1 = 0.0;
     norm_temp2 = 0.0;
+#pragma omp parallel for reduction(+ \
+                                   : norm_temp1, norm_temp2)
     for (j = 0; j < lastcol - firstcol + 1; j++)
     {
         norm_temp1 = norm_temp1 + x[j] * z[j];
@@ -593,9 +621,10 @@ void iterate(double *zeta, int *it)
         printf("\n   iteration           ||r||                 zeta\n");
     printf("    %5d       %20.14E%20.13f\n", *it, rnorm, *zeta);
 
-    //---------------------------------------------------------------------
-    // Normalize z to obtain x
-    //---------------------------------------------------------------------
+//---------------------------------------------------------------------
+// Normalize z to obtain x
+//---------------------------------------------------------------------
+#pragma omp parallel for
     for (j = 0; j < lastcol - firstcol + 1; j++)
     {
         x[j] = norm_temp2 * z[j];
