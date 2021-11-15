@@ -23,9 +23,16 @@ void pageRank(Graph g, double *solution, double damping, double convergence)
 
   int numNodes = num_nodes(g);
   double equal_prob = 1.0 / numNodes;
+  double no_out = 0.0;
+#pragma omp parallel for reduction(+ \
+                                   : no_out)
   for (int i = 0; i < numNodes; ++i)
   {
     solution[i] = equal_prob;
+    if (outgoing_size(g, i) == 0)
+    {
+      no_out += solution[i];
+    }
   }
 
   /*
@@ -34,26 +41,52 @@ void pageRank(Graph g, double *solution, double damping, double convergence)
      solution may need to allocate (and free) temporary arrays.
 
      Basic page rank pseudocode is provided below to get you started:
+  */
 
-     // initialization: see example code above
-     score_old[vi] = 1/numNodes;
+  // initialization: see example code above
+  bool converged = false;
+  double *score_new = (double *)calloc(numNodes, sizeof(double));
+  // score_old[vi] = 1 / numNodes;
+  double sum_v_out, global_diff = 0.0;
+  while (!converged)
+  {
+#pragma omp parallel for private(sum_v_out)
+    for (int i = 0; i < numNodes; i++)
+    {
+      // Vertex is typedef'ed to an int. Vertex* points into g.outgoing_edges[]
+      score_new[i] = 0.0;
+      sum_v_out = 0.0;
+      // num_out = 0.0;
+      const Vertex *start = incoming_begin(g, i);
+      const Vertex *end = incoming_end(g, i);
+      for (const Vertex *vi = start; vi != end; vi++)
+      {
+        // num_out = outgoing_size(g, *vi);
+        sum_v_out += solution[*vi] / outgoing_size(g, *vi);
+      }
+      score_new[i] = (damping * sum_v_out) + (1.0 - damping) / numNodes;
+      score_new[i] += damping * no_out / numNodes;
+    }
 
-     while (!converged) {
+    // compute score_new[vi] for all nodes vi:
+    // score_new[vi] = sum over all nodes vj reachable from incoming edges{score_old[vj] / number of edges leaving vj}
 
-       // compute score_new[vi] for all nodes vi:
-       score_new[vi] = sum over all nodes vj reachable from incoming edges
-                          { score_old[vj] / number of edges leaving vj  }
-       score_new[vi] = (damping * score_new[vi]) + (1.0-damping) / numNodes;
+    // compute how much per-node scores have changed
+    // quit once algorithm has converged
+    global_diff = 0.0;
+    no_out = 0.0;
+#pragma omp parallel for reduction(+ \
+                                   : global_diff, no_out)
+    for (int i = 0; i < numNodes; i++)
+    {
+      global_diff += fabs(score_new[i] - solution[i]);
+      solution[i] = score_new[i];
+      if (outgoing_size(g, i) == 0)
+      {
+        no_out += score_new[i];
+      }
+    }
 
-       score_new[vi] += sum over all nodes v in graph with no outgoing edges
-                          { damping * score_old[v] / numNodes }
-
-       // compute how much per-node scores have changed
-       // quit once algorithm has converged
-
-       global_diff = sum over all nodes vi { abs(score_new[vi] - score_old[vi]) };
-       converged = (global_diff < convergence)
-     }
-
-   */
+    converged = (global_diff < convergence);
+  }
 }
