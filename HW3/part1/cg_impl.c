@@ -61,8 +61,7 @@ void conj_grad(int colidx[],
         //       unrolled-by-two version is some 10% faster.
         //       The unrolled-by-8 version below is significantly faster
         //       on the Cray t3d - overall speed of code is 1.5 times faster.
-#pragma omp parallel for reduction(+ \
-                                   : sum)
+#pragma omp parallel for
         for (j = 0; j < lastrow - firstrow + 1; j++)
         {
             sum = 0.0;
@@ -434,7 +433,6 @@ void sparse(double a[],
             nza = nza + 1;
         }
     }
-// #pragma omp parallel for private(j)
 #pragma omp parallel for
     for (j = 1; j < nrows + 1; j++)
     {
