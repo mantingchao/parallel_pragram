@@ -185,7 +185,7 @@ void bfs_bottom_up(Graph graph, solution *sol)
         double start_time = CycleTimer::currentSeconds();
 #endif
 
-        vercxex_set_clear(new_frontier);
+        vertex_set_clear(new_frontier);
         change = bottom_up_step(graph, frontier, new_frontier, sol->distances);
 
 #ifdef VERBOSE
