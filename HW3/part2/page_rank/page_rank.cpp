@@ -17,10 +17,6 @@
 //
 void pageRank(Graph g, double *solution, double damping, double convergence)
 {
-
-  // initialize vertex weights to uniform probability. Double
-  // precision scores are used to avoid underflow for large graphs
-
   int numNodes = num_nodes(g);
   double equal_prob = 1.0 / numNodes;
   double no_out = 0.0;
@@ -46,7 +42,6 @@ void pageRank(Graph g, double *solution, double damping, double convergence)
   // initialization: see example code above
   bool converged = false;
   double *score_new = (double *)calloc(numNodes, sizeof(double));
-  // score_old[vi] = 1 / numNodes;
   double sum_v_out, global_diff = 0.0;
   while (!converged)
   {
@@ -56,20 +51,16 @@ void pageRank(Graph g, double *solution, double damping, double convergence)
       // Vertex is typedef'ed to an int. Vertex* points into g.outgoing_edges[]
       score_new[i] = 0.0;
       sum_v_out = 0.0;
-      // num_out = 0.0;
       const Vertex *start = incoming_begin(g, i);
       const Vertex *end = incoming_end(g, i);
+      // compute score_new[vi] for all nodes vi:
       for (const Vertex *vi = start; vi != end; vi++)
       {
-        // num_out = outgoing_size(g, *vi);
         sum_v_out += solution[*vi] / outgoing_size(g, *vi);
       }
       score_new[i] = (damping * sum_v_out) + (1.0 - damping) / numNodes;
       score_new[i] += damping * no_out / numNodes;
     }
-
-    // compute score_new[vi] for all nodes vi:
-    // score_new[vi] = sum over all nodes vj reachable from incoming edges{score_old[vj] / number of edges leaving vj}
 
     // compute how much per-node scores have changed
     // quit once algorithm has converged
