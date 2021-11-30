@@ -16,12 +16,53 @@ int main(int argc, char **argv)
     // ---
 
     // TODO: MPI init
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    int source;
+    int dest;
+    int tag = 0;
+    MPI_Status status;
 
+    long long int number_of_tosses = tosses / world_size;
+    long long int number_in_circle = 0;
+    long long int total = 0;
+    float x = 0.0f, y = 0.0f;
+    unsigned int seed = time(NULL) + world_rank;
     // TODO: binary tree redunction
+    for (long long int toss = 0; toss < number_of_tosses; toss++)
+    {
+        x = rand_r(&seed) / ((float)RAND_MAX);
+        y = rand_r(&seed) / ((float)RAND_MAX);
+        if (x * x + y * y <= 1.0f)
+            number_in_circle++;
+    }
+
+    for (source = 1; (1 << source) <= world_size; source++)
+    {
+        // printf("iter=%d",source);
+        if (world_rank % (1 << source) == 0)
+        {
+            // printf("\\\\rank %d source %d %lld %lld\n", world_rank, world_rank + (1<<(source-1)),number_in_circle,total);
+            total = number_in_circle;
+            MPI_Recv(&number_in_circle, 1, MPI_LONG_LONG_INT, world_rank + (1 << (source - 1)), tag, MPI_COMM_WORLD, &status);
+            total += number_in_circle;
+            number_in_circle = total;
+        }
+        else
+        {
+            total = number_in_circle;
+            dest = world_rank - (1 << (source - 1));
+            // printf("\\rank %d dest %d %lld %lld\n", world_rank,dest,number_in_circle,total);
+            MPI_Send(&number_in_circle, 1, MPI_LONG_LONG_INT, dest, tag, MPI_COMM_WORLD);
+            break;
+        }
+    }
 
     if (world_rank == 0)
     {
         // TODO: PI result
+        // printf("----rank %d out of %lld total\n", world_rank, total);
+        pi_result = 4 * total / ((float)tosses);
 
         // --- DON'T TOUCH ---
         double end_time = MPI_Wtime();
