@@ -39,10 +39,8 @@ int main(int argc, char **argv)
 
     for (source = 1; (1 << source) <= world_size; source++)
     {
-        // printf("iter=%d",source);
         if (world_rank % (1 << source) == 0)
         {
-            // printf("\\\\rank %d source %d %lld %lld\n", world_rank, world_rank + (1<<(source-1)),number_in_circle,total);
             total = number_in_circle;
             MPI_Recv(&number_in_circle, 1, MPI_LONG_LONG_INT, world_rank + (1 << (source - 1)), tag, MPI_COMM_WORLD, &status);
             total += number_in_circle;
@@ -52,7 +50,6 @@ int main(int argc, char **argv)
         {
             total = number_in_circle;
             dest = world_rank - (1 << (source - 1));
-            // printf("\\rank %d dest %d %lld %lld\n", world_rank,dest,number_in_circle,total);
             MPI_Send(&number_in_circle, 1, MPI_LONG_LONG_INT, dest, tag, MPI_COMM_WORLD);
             break;
         }
@@ -61,7 +58,6 @@ int main(int argc, char **argv)
     if (world_rank == 0)
     {
         // TODO: PI result
-        // printf("----rank %d out of %lld total\n", world_rank, total);
         pi_result = 4 * total / ((float)tosses);
 
         // --- DON'T TOUCH ---
