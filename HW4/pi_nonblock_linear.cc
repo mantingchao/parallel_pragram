@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     {
         // TODO: MPI workers
         dest = 0;
-        MPI_Isend(&number_in_circle, 1, MPI_LONG_LONG_INT, dest, world_rank, MPI_COMM_WORLD, &reqs[world_rank]);
+        MPI_Isend(&number_in_circle, 1, MPI_LONG_LONG_INT, dest, tag, MPI_COMM_WORLD, &reqs[world_rank]);
     }
     else if (world_rank == 0)
     {
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
         total = number_in_circle;
         for (source = 1; source < world_size; source++)
         {
-            MPI_Irecv(&number_in_circle, 1, MPI_LONG_LONG_INT, source, source, MPI_COMM_WORLD, &reqs[source - 1]);
+            MPI_Irecv(&number_in_circle, 1, MPI_LONG_LONG_INT, source, tag, MPI_COMM_WORLD, &reqs[source - 1]);
             total += number_in_circle;
         }
 
