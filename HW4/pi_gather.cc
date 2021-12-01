@@ -18,7 +18,6 @@ int main(int argc, char **argv)
     // TODO: MPI init
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-    int tag = 0;
 
     long long int number_of_tosses = tosses / world_size;
     long long int number_in_circle = 0;
@@ -41,7 +40,8 @@ int main(int argc, char **argv)
     {
         recv = (long long int *)calloc(world_size, sizeof(long long int));
     }
-    MPI_Gather(&number_in_circle, 1, MPI_LONG_LONG_INT, recv, 1, MPI_LONG_LONG_INT, tag, MPI_COMM_WORLD);
+
+    MPI_Gather(&number_in_circle, 1, MPI_LONG_LONG_INT, recv, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
     if (world_rank == 0)
     {
         for (int i = 0; i < world_size; i++)
