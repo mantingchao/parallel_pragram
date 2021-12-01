@@ -37,19 +37,16 @@ int main(int argc, char **argv)
         if (x * x + y * y <= 1.0f)
             number_in_circle++;
     }
-    // printf("rank %d out of %d processors\n", world_rank, world_size);
 
     if (world_rank > 0)
     {
         // TODO: handle workers
-        // printf("rank %d out of %d processors\n", world_rank, world_size);
         dest = 0;
         MPI_Send(&number_in_circle, 1, MPI_LONG_LONG_INT, dest, tag, MPI_COMM_WORLD);
     }
     else if (world_rank == 0)
     {
         // TODO: master
-        // printf("\\rank %d out of %d processors\n", world_rank, world_size);
         total = number_in_circle;
         for (source = 1; source < world_size; source++)
         {
