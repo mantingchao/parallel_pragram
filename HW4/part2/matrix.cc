@@ -55,43 +55,36 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
     c_mat = (int *)calloc(n * l, sizeof(int));
     ans = (int *)calloc(n * l, sizeof(int));
 
-    int start = (n / world_size) * world_rank;
+    int start = (n * l / world_size) * world_rank;
     int end;
     if (world_rank == world_size - 1)
     {
-        end = n;
+        end = n * l;
     }
     else
     {
-        end = start + (n / world_size);
+        end = start + (n * l / world_size);
     }
 
     int b_idx, c_idx, sum;
     int a_idx = start;
     for (int i = start; i < end; i++)
     {
+        int c_y = i % l;
+        int c_x = i / l;
+        int sum = 0;
         c_idx = i * l;
-
-        for (int j = 0; j < l; j++)
+        for (int j = 0; j < m; j++)
         {
-            b_idx = j;
-            sum = 0;
-            for (int k = 0; k < m; k++)
-            {
-                sum += a_mat[a_idx + k] * b_mat[b_idx];
-                b_idx += l;
-            }
-            c_mat[c_idx] = sum;
-            c_idx++;
+            sum += a_mat[c_x * m + j] * b_mat[j * l + c_y];
         }
-        a_idx += m;
+        c_mat[i] = sum;
     }
 
     MPI_Reduce(c_mat, ans, n * l, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
     if (world_rank == 0)
     {
-        printf("\n");
         for (int i = 0; i < n; i++)
         {
             c_idx = i * l;
