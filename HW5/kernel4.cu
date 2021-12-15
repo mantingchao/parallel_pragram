@@ -48,11 +48,8 @@ void hostFE(float upperX, float upperY, float lowerX, float lowerY, int *img, in
     dim3 numBlocks(resX / thread_num, resY / thread_num);
     mandelKernel<<<numBlocks, threadsPerBlock>>>(lowerX, lowerY, stepX, stepY, d_res, resX, resY, maxIterations);
 
-    // int *h_res = (int*)malloc(size); // host
     cudaMemcpy(img, d_res, size, cudaMemcpyDeviceToHost); // device to host
-    // memcpy(img, h_res, size);
 
     // free memory
     cudaFree(d_res);
-    // free(h_res);
 }
